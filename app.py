@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import requests  # Needed for OAuth flow
+import requests
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -38,16 +39,14 @@ def reply():
 # ------------------------------
 @app.route("/oauth/callback")
 def oauth_callback():
-    import json  # ⬅️ Add this if not already imported
-
     code = request.args.get("code")
     if not code:
         return "Missing code", 400
 
-    # Send the code to get tokens
+    # Request access token
     token_response = requests.post(
         "https://services.leadconnectorhq.com/oauth/token",
-        data={  # IMPORTANT: must be form-encoded, not JSON
+        data={
             "grant_type": "authorization_code",
             "code": code,
             "client_id": "688133f80c16bf99199cf742-mdgcwy4p",
@@ -66,44 +65,58 @@ def oauth_callback():
     print("🔁 Refresh Token:", refresh_token)
     print("📍 Location ID:", location_id)
 
-    # ✅ Save tokens to a file
-    tokens = {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "location_id": location_id
-    }
-
-    with open("tokens.json", "w") as f:
-        json.dump(tokens, f)
+    # ✅ Store in environment variables
+    os.environ["ACCESS_TOKEN"] = access_token or ""
+    os.environ["REFRESH_TOKEN"] = refresh_token or ""
+    os.environ["LOCATION_ID"] = location_id or ""
 
     return "Authorization successful!"
 
 
-
 # ------------------------------
-# Placeholder: Relay to iMessage
+# Relay to iMessage (Placeholder)
 # ------------------------------
 def send_to_imessage(data):
-    print("📤 [To iMessage]:", data['message'])
-    # Example: POST to Mac mini
+    print("📤 [To iMessage]:", data.get('message'))
+    # TODO: Send to Mac mini relay
+    # Example:
     # requests.post("http://<mac-ip>:5005/send", json=data)
 
 
 # ------------------------------
-# Placeholder: Push Reply to GHL
+# Push Reply to GHL
 # ------------------------------
 def send_to_ghl(reply_data):
     print("🔁 [To GHL Conversations]:", reply_data)
-    # headers = {
-    #     "Authorization": f"Bearer {access_token}",
-    #     "Content-Type": "application/json"
-    # }
-    # requests.post("https://rest.gohighlevel.com/v1/conversations/messages", headers=headers, json=payload)
+    access_token = os.getenv("ACCESS_TOKEN")
+
+    if not access_token:
+        print("❌ No access token available")
+        return
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "contactId": reply_data.get('contact_id'),
+        "message": reply_data.get('message')
+    }
+
+    response = requests.post(
+        "https://services.leadconnectorhq.com/conversations/messages",
+        headers=headers,
+        json=payload
+    )
+
+    print("📨 Response from GHL:", response.status_code, response.text)
 
 
 # ------------------------------
-# Run the Flask app
+# Run Flask App
 # ------------------------------
 if __name__ == '__main__':
     app.run(port=3000)
+
 
