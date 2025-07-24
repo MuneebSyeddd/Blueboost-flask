@@ -38,26 +38,24 @@ def reply():
 # ------------------------------
 @app.route("/oauth/callback")
 def oauth_callback():
+    import json  # ⬅️ Add this if not already imported
+
     code = request.args.get("code")
     if not code:
         return "Missing code", 400
 
+    # Send the code to get tokens
     token_response = requests.post(
-    "https://services.leadconnectorhq.com/oauth/token",
-    data={
-        "grant_type": "authorization_code",
-        "code": code,
-        "client_id": "688133f80c16bf99199cf742-mdgcwy4p",
-        "client_secret": "bd3eea63-e017-4138-8046-86248e01e2d4",
-        "redirect_uri": "https://blueboost-api.onrender.com/oauth/callback"
-    },
-    headers={
-        "Content-Type": "application/x-www-form-urlencoded"
-    }
-)
-
-    # NEW: Log full response
-    print("🔍 Raw response:", token_response.status_code, token_response.text)
+        "https://services.leadconnectorhq.com/oauth/token",
+        data={  # IMPORTANT: must be form-encoded, not JSON
+            "grant_type": "authorization_code",
+            "code": code,
+            "client_id": "688133f80c16bf99199cf742-mdgcwy4p",
+            "client_secret": "bd3eea63-e017-4138-8046-86248e01e2d4",
+            "redirect_uri": "https://blueboost-api.onrender.com/oauth/callback"
+        },
+        headers={"Content-Type": "application/x-www-form-urlencoded"}
+    )
 
     data = token_response.json()
     access_token = data.get("access_token")
@@ -67,6 +65,16 @@ def oauth_callback():
     print("✅ Access Token:", access_token)
     print("🔁 Refresh Token:", refresh_token)
     print("📍 Location ID:", location_id)
+
+    # ✅ Save tokens to a file
+    tokens = {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "location_id": location_id
+    }
+
+    with open("tokens.json", "w") as f:
+        json.dump(tokens, f)
 
     return "Authorization successful!"
 
