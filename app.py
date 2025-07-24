@@ -42,13 +42,19 @@ def oauth_callback():
     if not code:
         return "Missing code", 400
 
-    token_response = requests.post("https://services.leadconnectorhq.com/oauth/token", json={
+    token_response = requests.post(
+    "https://services.leadconnectorhq.com/oauth/token",
+    data={
         "grant_type": "authorization_code",
         "code": code,
         "client_id": "688133f80c16bf99199cf742-mdgcwy4p",
         "client_secret": "bd3eea63-e017-4138-8046-86248e01e2d4",
         "redirect_uri": "https://blueboost-api.onrender.com/oauth/callback"
-    })
+    },
+    headers={
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+)
 
     # NEW: Log full response
     print("🔍 Raw response:", token_response.status_code, token_response.text)
