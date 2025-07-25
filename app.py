@@ -89,8 +89,7 @@ def send_to_imessage(data):
         "message": message
     }
 
-    # Replace this with your actual Mac's public IP
-    mac_ip = "http://YOUR_PUBLIC_MAC_IP:5005/send"
+    mac_ip = "http://8.30.153.4:5005/send"
 
     try:
         response = requests.post(mac_ip, json=payload)
