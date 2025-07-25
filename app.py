@@ -77,10 +77,26 @@ def oauth_callback():
 # Relay to iMessage (Placeholder)
 # ------------------------------
 def send_to_imessage(data):
-    print("📤 [To iMessage]:", data.get('message'))
-    # TODO: Send to Mac mini relay
-    # Example:
-    # requests.post("http://<mac-ip>:5005/send", json=data)
+    phone = data.get("phone")
+    message = data.get("message")
+
+    if not phone or not message:
+        print("❌ Missing phone or message in webhook payload")
+        return
+
+    payload = {
+        "phone": phone,
+        "message": message
+    }
+
+    # Replace this with your actual Mac's public IP
+    mac_ip = "http://YOUR_PUBLIC_MAC_IP:5005/send"
+
+    try:
+        response = requests.post(mac_ip, json=payload)
+        print(f"📤 Sent to Mac Relay: {response.status_code}, {response.text}")
+    except Exception as e:
+        print(f"🚨 Error sending to iMessage Relay: {e}")
 
 
 # ------------------------------
