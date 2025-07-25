@@ -110,8 +110,9 @@ def send_to_ghl(reply_data):
         return
 
     headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
+    "Authorization": f"Bearer {access_token}",
+    "Content-Type": "application/json",
+    "Version": "2021-07-28"
     }
 
     payload = {
