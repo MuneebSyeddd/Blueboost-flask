@@ -112,31 +112,69 @@ def send_to_imessage(data):
 # Push Reply to GHL
 # ------------------------------
 def send_to_ghl(reply_data):
-    try:
+    def load_tokens():
         with open("tokens.json", "r") as f:
-            tokens = json.load(f)
-            access_token = tokens.get("access_token")
+            return json.load(f)
+
+    def save_tokens(tokens):
+        with open("tokens.json", "w") as f:
+            json.dump(tokens, f)
+
+    def refresh_token(tokens):
+        print("🔁 Refreshing token...")
+        refresh_response = requests.post(
+            "https://services.leadconnectorhq.com/oauth/token",
+            data={
+                "grant_type": "refresh_token",
+                "refresh_token": tokens["refresh_token"],
+                "client_id": "688133f80c16bf99199cf742-mdgcwy4p",
+                "client_secret": "bd3eea63-e017-4138-8046-86248e01e2d4"
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        refreshed = refresh_response.json()
+        print("✅ Token refreshed:", refreshed)
+
+        tokens["access_token"] = refreshed.get("access_token")
+        tokens["refresh_token"] = refreshed.get("refresh_token")
+        save_tokens(tokens)
+        return tokens
+
+    try:
+        tokens = load_tokens()
     except Exception as e:
         print("❌ Could not read token file:", e)
         return
 
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json",
-        "Version": "2021-07-28"
-    }
+    def send_request(access_token):
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+            "Version": "2021-07-28"
+        }
 
-    payload = {
-        "contactId": reply_data.get('contact_id'),
-        "message": reply_data.get('message'),
-        "type": "SMS"
-    }
+        payload = {
+            "contactId": reply_data.get('contact_id'),
+            "message": reply_data.get('message'),
+            "type": "SMS"
+        }
 
-    response = requests.post(
-        "https://services.leadconnectorhq.com/conversations/messages",
-        headers=headers,
-        json=payload
-    )
+        return requests.post(
+            "https://services.leadconnectorhq.com/conversations/messages",
+            headers=headers,
+            json=payload
+        )
+
+    # Try initial send
+    response = send_request(tokens["access_token"])
+
+    if response.status_code == 401:
+        print("⚠️ Access token expired. Attempting refresh...")
+        try:
+            tokens = refresh_token(tokens)
+            response = send_request(tokens["access_token"])
+        except Exception as e:
+            print("❌ Token refresh failed:", e)
 
     print("📨 GHL Response:", response.status_code, response.text)
 
