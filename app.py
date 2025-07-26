@@ -128,7 +128,8 @@ def send_to_ghl(reply_data):
 
     payload = {
         "contactId": reply_data.get('contact_id'),
-        "message": reply_data.get('message')
+        "message": reply_data.get('message'),
+        "type": "SMS"
     }
 
     response = requests.post(
